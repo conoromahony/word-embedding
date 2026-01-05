@@ -6,7 +6,24 @@ T5 (custom SentencePiece-style implementation), and custom tokenizers.
 
 import random
 import tiktoken
+import os
 from flask import Flask, render_template, request, jsonify
+
+# Set environment variable to disable symlinks in Hugging Face Hub
+# This helps with offline environments
+os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
+os.environ['HF_HUB_OFFLINE'] = '0'  # Try online first, but fail fast
+
+# Import transformers library components
+try:
+    from transformers import (
+        BertTokenizer,
+        AutoTokenizer,
+        LlamaTokenizer
+    )
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
 
 app = Flask(__name__)
 
@@ -126,6 +143,153 @@ def tokenize_whisper(text):
     return tokens
 
 
+def tokenize_bert(text):
+    """Tokenize text using BERT tokenizer from bert-base-uncased."""
+    if not TRANSFORMERS_AVAILABLE:
+        return ["[Transformers library not available]"]
+    
+    try:
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', local_files_only=True)
+        # Get token strings and token IDs
+        tokens = tokenizer.tokenize(text)
+        token_ids = tokenizer.convert_tokens_to_ids(tokens)
+        
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
+        
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[BERT tokenization failed: Model not available offline]"]
+
+
+def tokenize_gpt4(text):
+    """Tokenize text using GPT-4 tokenizer via tiktoken (cl100k_base encoding)."""
+    try:
+        # GPT-4 uses cl100k_base encoding
+        encoding = tiktoken.get_encoding("cl100k_base")
+        tokens = encoding.encode(text)
+        token_strings = [encoding.decode([token]) for token in tokens]
+        
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token_str, token_id in zip(token_strings, tokens):
+            result_tokens.append(f"{token_str} [{token_id}]")
+        
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError, ConnectionError) as e:
+        return ["[GPT-4 tokenization failed: Encoding not available offline]"]
+
+
+def tokenize_starcoder(text):
+    """Tokenize text using StarCoder tokenizer from bigcode/starcoder."""
+    if not TRANSFORMERS_AVAILABLE:
+        return ["[Transformers library not available]"]
+    
+    try:
+        tokenizer = AutoTokenizer.from_pretrained('bigcode/starcoder', local_files_only=True)
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
+        
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
+        
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[StarCoder tokenization failed: Model not available offline]"]
+
+
+def tokenize_galactica(text):
+    """Tokenize text using Galactica tokenizer from facebook/galactica-1.3b."""
+    if not TRANSFORMERS_AVAILABLE:
+        return ["[Transformers library not available]"]
+    
+    try:
+        tokenizer = AutoTokenizer.from_pretrained('facebook/galactica-1.3b', local_files_only=True)
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
+        
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
+        
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[Galactica tokenization failed: Model not available offline]"]
+
+
+def tokenize_phi3(text):
+    """Tokenize text using Phi-3 tokenizer (fallback to microsoft/phi-2)."""
+    if not TRANSFORMERS_AVAILABLE:
+        return ["[Transformers library not available]"]
+    
+    try:
+        # Try microsoft/phi-2 as fallback (phi-3 models may require special access)
+        # Note: This model typically requires trust_remote_code=True, but we disable it
+        # for security reasons. This may cause the tokenizer to fail, which is acceptable
+        # in favor of not executing arbitrary remote code. In production, use pre-validated
+        # and cached models only.
+        tokenizer = AutoTokenizer.from_pretrained('microsoft/phi-2', 
+                                                   local_files_only=True,
+                                                   trust_remote_code=False)
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
+        
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
+        
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[Phi-3 tokenization failed: Model not available offline]"]
+
+
+def tokenize_llama2(text):
+    """Tokenize text using LLaMA 2 tokenizer from meta-llama/Llama-2-7b-hf."""
+    if not TRANSFORMERS_AVAILABLE:
+        return ["[Transformers library not available]"]
+    
+    try:
+        # Note: LLaMA models may require authentication for gated model access
+        # Try LlamaTokenizer first, then AutoTokenizer as fallback
+        tokenizer = None
+        for tokenizer_class in [LlamaTokenizer, AutoTokenizer]:
+            try:
+                tokenizer = tokenizer_class.from_pretrained('meta-llama/Llama-2-7b-hf',
+                                                           local_files_only=True)
+                break
+            except (OSError, ValueError):
+                continue
+        
+        if tokenizer is None:
+            return ["[LLaMA 2 tokenization failed: Model not available offline]"]
+        
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
+        
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
+        
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[LLaMA 2 tokenization failed: Model not available offline]"]
+
+
 def create_colored_tokens(tokens):
     """
     Create HTML spans with random colors for each token.
@@ -164,6 +328,14 @@ def tokenize():
     t5_tokens = tokenize_t5(text)
     whisper_tokens = tokenize_whisper(text)
     
+    # Tokenize with new models
+    bert_tokens = tokenize_bert(text)
+    gpt4_tokens = tokenize_gpt4(text)
+    starcoder_tokens = tokenize_starcoder(text)
+    galactica_tokens = tokenize_galactica(text)
+    phi3_tokens = tokenize_phi3(text)
+    llama2_tokens = tokenize_llama2(text)
+    
     # Create colored token representations
     results = {
         'gpt2': {
@@ -180,6 +352,36 @@ def tokenize():
             'name': 'Whisper/CLIP (Custom from OpenAI)',
             'tokens': create_colored_tokens(whisper_tokens),
             'count': len(whisper_tokens)
+        },
+        'bert': {
+            'name': 'BERT (WordPiece from Google)',
+            'tokens': create_colored_tokens(bert_tokens),
+            'count': len(bert_tokens)
+        },
+        'gpt4': {
+            'name': 'GPT-4 (tiktoken cl100k_base from OpenAI)',
+            'tokens': create_colored_tokens(gpt4_tokens),
+            'count': len(gpt4_tokens)
+        },
+        'starcoder': {
+            'name': 'StarCoder (BPE from BigCode)',
+            'tokens': create_colored_tokens(starcoder_tokens),
+            'count': len(starcoder_tokens)
+        },
+        'galactica': {
+            'name': 'Galactica (BPE from Meta)',
+            'tokens': create_colored_tokens(galactica_tokens),
+            'count': len(galactica_tokens)
+        },
+        'phi3': {
+            'name': 'Phi-3 (CodeGen from Microsoft)',
+            'tokens': create_colored_tokens(phi3_tokens),
+            'count': len(phi3_tokens)
+        },
+        'llama2': {
+            'name': 'LLaMA 2 (SentencePiece from Meta)',
+            'tokens': create_colored_tokens(llama2_tokens),
+            'count': len(llama2_tokens)
         }
     }
     
