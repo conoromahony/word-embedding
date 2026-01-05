@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Tokenization Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .tokenizer-result {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .tokenizer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .tokenizer-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .token-count {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .tokens-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            line-height: 2;
+        }
+
+        .token {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            white-space: pre;
+            transition: transform 0.1s;
+        }
+
+        .token:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            position: relative;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.2em;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .examples {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+
+        .examples h3 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .example-btn {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔤 LLM Tokenization Visualizer</h1>
+        <p class="subtitle">Compare how different language models tokenize your text</p>
+
+        <div class="info-box">
+            <p><strong>How it works:</strong> Enter text below and see how different tokenization approaches break it into tokens. Each token is color-coded for easy visualization.</p>
+            <p><strong>Supported tokenizers:</strong> GPT-2/3 (BPE), T5/UL2 (SentencePiece), Whisper/CLIP (Custom)</p>
+        </div>
+
+        <div class="input-section">
+            <textarea id="inputText" placeholder="Enter your text here to see how it gets tokenized by different LLM approaches...">Hello, world! How are you doing today?</textarea>
+        </div>
+
+        <div class="examples">
+            <h3>📝 Try these examples:</h3>
+            <span class="example-btn" onclick="setExample('Hello, world! How are you doing today?')">Simple Greeting</span>
+            <span class="example-btn" onclick="setExample('The quick brown fox jumps over the lazy dog.')">Classic Pangram</span>
+            <span class="example-btn" onclick="setExample('OpenAI\'s GPT-4 is a state-of-the-art language model.')">Technical Text</span>
+            <span class="example-btn" onclick="setExample('🎉 Emojis and special chars: @#$%^&*()')">Emojis & Special Chars</span>
+        </div>
+
+        <div class="button-container">
+            <button onclick="tokenizeText()" id="tokenizeBtn">Tokenize Text</button>
+        </div>
+
+        <div class="error" id="error"></div>
+        <div class="loading" id="loading">🔄 Tokenizing...</div>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        function setExample(text) {
+            document.getElementById('inputText').value = text;
+        }
+
+        async function tokenizeText() {
+            const text = document.getElementById('inputText').value.trim();
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const tokenizeBtn = document.getElementById('tokenizeBtn');
+
+            // Clear previous results and errors
+            resultsDiv.classList.remove('show');
+            errorDiv.classList.remove('show');
+            resultsDiv.innerHTML = '';
+
+            if (!text) {
+                errorDiv.textContent = 'Please enter some text to tokenize.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            // Show loading
+            loadingDiv.classList.add('show');
+            tokenizeBtn.disabled = true;
+
+            try {
+                const response = await fetch('/tokenize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to tokenize text');
+                }
+
+                const data = await response.json();
+
+                // Display results
+                displayResults(data);
+                resultsDiv.classList.add('show');
+
+            } catch (error) {
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.classList.add('show');
+            } finally {
+                loadingDiv.classList.remove('show');
+                tokenizeBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Display each tokenizer's results
+            for (const [key, result] of Object.entries(data)) {
+                const tokenizerDiv = document.createElement('div');
+                tokenizerDiv.className = 'tokenizer-result';
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'tokenizer-header';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'tokenizer-name';
+                nameSpan.textContent = result.name;
+
+                const countSpan = document.createElement('span');
+                countSpan.className = 'token-count';
+                countSpan.textContent = `${result.count} tokens`;
+
+                headerDiv.appendChild(nameSpan);
+                headerDiv.appendChild(countSpan);
+
+                const tokensContainer = document.createElement('div');
+                tokensContainer.className = 'tokens-container';
+
+                result.tokens.forEach(token => {
+                    const tokenSpan = document.createElement('span');
+                    tokenSpan.className = 'token';
+                    tokenSpan.style.backgroundColor = token.color;
+                    tokenSpan.textContent = token.text;
+                    tokenSpan.title = `Token: "${token.text}"`;
+                    tokensContainer.appendChild(tokenSpan);
+                });
+
+                tokenizerDiv.appendChild(headerDiv);
+                tokenizerDiv.appendChild(tokensContainer);
+                resultsDiv.appendChild(tokenizerDiv);
+            }
+        }
+
+        // Allow Enter key to trigger tokenization (with Shift+Enter for new line)
+        document.getElementById('inputText').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                tokenizeText();
+            }
+        });
+    </script>
+</body>
+</html>
