@@ -1,4 +1,5 @@
 Flask==3.0.0
 tiktoken==0.5.2
-# sentencepiece==0.1.99
+transformers==4.36.0
+sentencepiece==0.1.99
 Werkzeug==3.0.3
