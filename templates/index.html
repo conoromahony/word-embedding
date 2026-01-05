@@ -122,6 +122,11 @@
             color: #333;
         }
 
+        .tokenizer-description {
+            font-size: 1em;
+            color: #333;
+        }
+
         .token-count {
             background: #667eea;
             color: white;
@@ -181,37 +186,6 @@
             display: block;
         }
 
-        .examples {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f0f0f0;
-            border-radius: 8px;
-        }
-
-        .examples h3 {
-            color: #555;
-            margin-bottom: 10px;
-            font-size: 1em;
-        }
-
-        .example-btn {
-            display: inline-block;
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-            padding: 8px 15px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .example-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-
         .info-box {
             background: #e8f4f8;
             border-left: 4px solid #17a2b8;
@@ -231,20 +205,14 @@
         <h1>Compare Different Tokenization Approaches</h1>
 
         <div class="info-box">
-            <p><strong>How it works:</strong> Enter text and see how different tokenization approaches break it into tokens. Each token is color-coded for easy visualization.</p>
-            <p><strong>Supported tokenizers:</strong> GPT-2/3, GPT-4, BERT, T5/UL2, LLaMA 2, Phi-3</p>
+            <p>Enter text and see how different tokenization approaches break it into tokens. Each token is color-coded for easy visualization.</p>
         </div>
 
         <div class="input-section">
-            <textarea id="inputText" placeholder="Enter your text here to see how it gets tokenized by different LLM approaches...">Hello, world! How are you doing today?</textarea>
-        </div>
-
-        <div class="examples">
-            <h3>📝 Try these examples:</h3>
-            <span class="example-btn" data-example="Hello, world! How are you doing today?">Simple Greeting</span>
-            <span class="example-btn" data-example="The quick brown fox jumps over the lazy dog.">Classic Pangram</span>
-            <span class="example-btn" data-example="OpenAI's GPT-4 is a state-of-the-art language model.">Technical Text</span>
-            <span class="example-btn" data-example="🎉 Emojis and special chars: @#$%^&*()">Emojis & Special Chars</span>
+            <textarea id="inputText" placeholder="Enter your text here to see how it gets tokenized by different LLM approaches...">English and CAPITALIZATION
+⛳︎♥︎
+show_tokens False None elif == >= else: two tabs:" " Three tabs: "   "
+12.0*50=600</textarea>
         </div>
 
         <div class="button-container">
@@ -350,11 +318,16 @@
                     nameSpan.className = 'tokenizer-name';
                     nameSpan.textContent = result.name;
 
+                    const descriptionSpan = document.createElement('span');
+                    descriptionSpan.className = 'tokenizer-description';
+                    descriptionSpan.textContent = result.description;
+
                     const countSpan = document.createElement('span');
                     countSpan.className = 'token-count';
                     countSpan.textContent = `${result.count} tokens`;
 
                     headerDiv.appendChild(nameSpan);
+                    headerDiv.appendChild(descriptionSpan);
                     headerDiv.appendChild(countSpan);
 
                     const tokensContainer = document.createElement('div');

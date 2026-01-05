@@ -8,6 +8,10 @@ import random
 import tiktoken
 import os
 from flask import Flask, render_template, request, jsonify
+from huggingface_hub import login
+import os
+
+login(token=os.environ["HF_TOKEN"])
 
 # Set environment variable to disable symlinks in Hugging Face Hub
 # This helps with offline environments
@@ -113,9 +117,6 @@ def tokenize_t5(text):
     return tokens
 
 
-
-
-
 def tokenize_bert(text):
     """Tokenize text using BERT tokenizer from bert-base-uncased."""
     if not TRANSFORMERS_AVAILABLE:
@@ -144,12 +145,6 @@ def tokenize_gpt4(text):
         return ["[GPT-4 tokenization failed: Encoding not available offline]"]
 
 
-
-
-
-
-
-
 def tokenize_phi3(text):
     """Tokenize text using Phi-3 tokenizer (fallback to microsoft/phi-2)."""
     if not TRANSFORMERS_AVAILABLE:
@@ -161,9 +156,7 @@ def tokenize_phi3(text):
         # for security reasons. This may cause the tokenizer to fail, which is acceptable
         # in favor of not executing arbitrary remote code. In production, use pre-validated
         # and cached models only.
-        tokenizer = AutoTokenizer.from_pretrained('microsoft/phi-2', 
-                                                   local_files_only=True,
-                                                   trust_remote_code=False)
+        tokenizer = AutoTokenizer.from_pretrained('microsoft/phi-2')
         # Get token strings only (no IDs)
         encoded = tokenizer(text, add_special_tokens=False)
         tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
@@ -179,16 +172,7 @@ def tokenize_llama2(text):
         return ["[Transformers library not available]"]
     
     try:
-        # Note: LLaMA models may require authentication for gated model access
-        # Try LlamaTokenizer first, then AutoTokenizer as fallback
-        tokenizer = None
-        for tokenizer_class in [LlamaTokenizer, AutoTokenizer]:
-            try:
-                tokenizer = tokenizer_class.from_pretrained('meta-llama/Llama-2-7b-hf',
-                                                           local_files_only=True)
-                break
-            except (OSError, ValueError):
-                continue
+        tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf')
         
         if tokenizer is None:
             return ["[LLaMA 2 tokenization failed: Model not available offline]"]
@@ -252,32 +236,38 @@ def tokenize():
     # Create colored token representations in the specified order
     results = {
         'gpt2': {
-            'name': 'GPT-2/GPT-3 - BPE tokenizer with 50,257 vocabulary tokens.',
+            'name': 'GPT-2/GPT-3',
+            'description': 'BPE tokenizer from OpenAI with 50,257 vocabulary tokens.',
             'tokens': create_colored_tokens(gpt2_tokens),
             'count': len(gpt2_tokens)
         },
         'gpt4': {
-            'name': 'GPT-4 - Enhanced BPE tokenizer with 100,000 vocabulary tokens.',
+            'name': 'GPT-4',
+            'description': 'Enhanced BPE tokenizer from OpenAI with 100,000 vocabulary tokens.',
             'tokens': create_colored_tokens(gpt4_tokens),
             'count': len(gpt4_tokens)
         },
         'bert': {
-            'name': 'BERT - WordPiece tokenizer with 30,522 vocabulary tokens.',
+            'name': 'BERT',
+            'description': 'WordPiece tokenizer (uncased) from Google with 30,522 vocabulary tokens.',
             'tokens': create_colored_tokens(bert_tokens),
             'count': len(bert_tokens)
         },
         't5': {
-            'name': 'T5/UL2 - SentencePiece tokenizer with 32,128 vocabulary tokens.',
+            'name': 'T5/UL2',
+            'description': 'SentencePiece tokenizer from Google with 32,128 vocabulary tokens.',
             'tokens': create_colored_tokens(t5_tokens),
             'count': len(t5_tokens)
         },
         'llama2': {
-            'name': 'LLaMA 2 - SentencePiece tokenizer with 32,000 vocabulary tokens.',
+            'name': 'LLaMA 2',
+            'description': 'SentencePiece tokenizer from Meta with 32,000 vocabulary tokens.',
             'tokens': create_colored_tokens(llama2_tokens),
             'count': len(llama2_tokens)
         },
         'phi3': {
-            'name': 'Phi-3 - CodeGen tokenizer with 51,200 vocabulary tokens.',
+            'name': 'Phi-3',
+            'description': 'CodeGen tokenizer from Microsoft with 51,200 vocabulary tokens.',
             'tokens': create_colored_tokens(phi3_tokens),
             'count': len(phi3_tokens)
         }
