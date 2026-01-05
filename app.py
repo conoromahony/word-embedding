@@ -1,29 +1,26 @@
 """
 Flask application for visualizing LLM tokenization.
-Supports multiple tokenization approaches: GPT-2/3 (tiktoken with BPE fallback), 
-T5 (custom SentencePiece-style implementation), and custom tokenizers.
 """
 
+import os
 import random
 import tiktoken
-import os
 from flask import Flask, render_template, request, jsonify
 from huggingface_hub import login
-import os
-
-login(token=os.environ["HF_TOKEN"])
 
 # Set environment variable to disable symlinks in Hugging Face Hub
 # This helps with offline environments
 os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
 os.environ['HF_HUB_OFFLINE'] = '0'  # Try online first, but fail fast
 
+# Login to Hugging Face Hub using token from environment variable
+login(token=os.environ["HF_TOKEN"])
+
 # Import transformers library components
 try:
     from transformers import (
         BertTokenizer,
-        AutoTokenizer,
-        LlamaTokenizer
+        AutoTokenizer
     )
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
@@ -172,7 +169,7 @@ def tokenize_llama2(text):
         return ["[Transformers library not available]"]
     
     try:
-        tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf')
+        tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf', use_auth_token=True, force_download=True)
         
         if tokenizer is None:
             return ["[LLaMA 2 tokenization failed: Model not available offline]"]
@@ -180,16 +177,10 @@ def tokenize_llama2(text):
         # Get token strings and token IDs
         encoded = tokenizer(text, add_special_tokens=False)
         tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-        token_ids = encoded['input_ids']
-        
-        # Return tokens with IDs for display
-        result_tokens = []
-        for token, token_id in zip(tokens, token_ids):
-            result_tokens.append(f"{token} [{token_id}]")
-        
-        return result_tokens if result_tokens else ["[Empty tokenization]"]
+
+        return tokens if tokens else ["[Empty tokenization]"]
     except (OSError, ValueError, ImportError, RuntimeError) as e:
-        return ["[LLaMA 2 tokenization failed: Model not available offline]"]
+        return [f"[LLaMA 2 tokenization failed: {str(e)}]"]
 
 
 def create_colored_tokens(tokens):
