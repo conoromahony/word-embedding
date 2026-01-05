@@ -40,6 +40,15 @@ cd word-embedding
 pip install -r requirements.txt
 ```
 
+### Optional: Enable Debug Mode
+
+For development purposes, you can enable Flask's debug mode:
+```bash
+export FLASK_DEBUG=true
+```
+
+**Warning:** Never run with debug mode enabled in production environments as it can expose security vulnerabilities.
+
 ## Usage
 
 ### Running the Application
