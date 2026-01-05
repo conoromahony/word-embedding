@@ -149,35 +149,19 @@ def tokenize_bert(text):
         return ["[Transformers library not available]"]
     
     try:
-        # Use a timeout to prevent hanging
-        import signal
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', local_files_only=True)
+        # Get token strings and token IDs
+        tokens = tokenizer.tokenize(text)
+        token_ids = tokenizer.convert_tokens_to_ids(tokens)
         
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Model loading timed out")
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
         
-        # Set a timeout of 5 seconds for model loading
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(5)
-        
-        try:
-            tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-            signal.alarm(0)  # Cancel timeout
-            
-            # Get token strings and token IDs
-            tokens = tokenizer.tokenize(text)
-            token_ids = tokenizer.convert_tokens_to_ids(tokens)
-            
-            # Return tokens with IDs for display
-            result_tokens = []
-            for token, token_id in zip(tokens, token_ids):
-                result_tokens.append(f"{token} [{token_id}]")
-            
-            return result_tokens if result_tokens else ["[Empty tokenization]"]
-        except TimeoutError:
-            signal.alarm(0)  # Cancel timeout
-            return ["[BERT model loading timed out - offline mode]"]
-    except Exception as e:
-        return [f"[BERT tokenization failed: Model not available offline]"]
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[BERT tokenization failed: Model not available offline]"]
 
 
 def tokenize_gpt4(text):
@@ -194,8 +178,8 @@ def tokenize_gpt4(text):
             result_tokens.append(f"{token_str} [{token_id}]")
         
         return result_tokens if result_tokens else ["[Empty tokenization]"]
-    except Exception as e:
-        return [f"[GPT-4 tokenization failed: {str(e)}]"]
+    except (OSError, ValueError, ImportError, RuntimeError, ConnectionError) as e:
+        return ["[GPT-4 tokenization failed: Encoding not available offline]"]
 
 
 def tokenize_starcoder(text):
@@ -204,34 +188,20 @@ def tokenize_starcoder(text):
         return ["[Transformers library not available]"]
     
     try:
-        import signal
+        tokenizer = AutoTokenizer.from_pretrained('bigcode/starcoder', local_files_only=True)
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
         
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Model loading timed out")
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
         
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(5)
-        
-        try:
-            tokenizer = AutoTokenizer.from_pretrained('bigcode/starcoder')
-            signal.alarm(0)
-            
-            # Get token strings and token IDs
-            encoded = tokenizer(text, add_special_tokens=False)
-            tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-            token_ids = encoded['input_ids']
-            
-            # Return tokens with IDs for display
-            result_tokens = []
-            for token, token_id in zip(tokens, token_ids):
-                result_tokens.append(f"{token} [{token_id}]")
-            
-            return result_tokens if result_tokens else ["[Empty tokenization]"]
-        except TimeoutError:
-            signal.alarm(0)
-            return ["[StarCoder model loading timed out - offline mode]"]
-    except Exception as e:
-        return [f"[StarCoder tokenization failed: Model not available offline]"]
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[StarCoder tokenization failed: Model not available offline]"]
 
 
 def tokenize_galactica(text):
@@ -240,34 +210,20 @@ def tokenize_galactica(text):
         return ["[Transformers library not available]"]
     
     try:
-        import signal
+        tokenizer = AutoTokenizer.from_pretrained('facebook/galactica-1.3b', local_files_only=True)
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
         
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Model loading timed out")
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
         
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(5)
-        
-        try:
-            tokenizer = AutoTokenizer.from_pretrained('facebook/galactica-1.3b')
-            signal.alarm(0)
-            
-            # Get token strings and token IDs
-            encoded = tokenizer(text, add_special_tokens=False)
-            tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-            token_ids = encoded['input_ids']
-            
-            # Return tokens with IDs for display
-            result_tokens = []
-            for token, token_id in zip(tokens, token_ids):
-                result_tokens.append(f"{token} [{token_id}]")
-            
-            return result_tokens if result_tokens else ["[Empty tokenization]"]
-        except TimeoutError:
-            signal.alarm(0)
-            return ["[Galactica model loading timed out - offline mode]"]
-    except Exception as e:
-        return [f"[Galactica tokenization failed: Model not available offline]"]
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[Galactica tokenization failed: Model not available offline]"]
 
 
 def tokenize_phi3(text):
@@ -276,35 +232,25 @@ def tokenize_phi3(text):
         return ["[Transformers library not available]"]
     
     try:
-        import signal
+        # Try microsoft/phi-2 as fallback (phi-3 models may require special access)
+        # Note: trust_remote_code is required for this model but poses security risks
+        # In production, use only verified and cached models
+        tokenizer = AutoTokenizer.from_pretrained('microsoft/phi-2', 
+                                                   local_files_only=True,
+                                                   trust_remote_code=False)
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
         
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Model loading timed out")
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
         
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(5)
-        
-        try:
-            # Try microsoft/phi-2 as fallback (phi-3 models may require special access)
-            tokenizer = AutoTokenizer.from_pretrained('microsoft/phi-2', trust_remote_code=True)
-            signal.alarm(0)
-            
-            # Get token strings and token IDs
-            encoded = tokenizer(text, add_special_tokens=False)
-            tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-            token_ids = encoded['input_ids']
-            
-            # Return tokens with IDs for display
-            result_tokens = []
-            for token, token_id in zip(tokens, token_ids):
-                result_tokens.append(f"{token} [{token_id}]")
-            
-            return result_tokens if result_tokens else ["[Empty tokenization]"]
-        except TimeoutError:
-            signal.alarm(0)
-            return ["[Phi-3 model loading timed out - offline mode]"]
-    except Exception as e:
-        return [f"[Phi-3 tokenization failed: Model not available offline]"]
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[Phi-3 tokenization failed: Model not available offline]"]
 
 
 def tokenize_llama2(text):
@@ -313,41 +259,29 @@ def tokenize_llama2(text):
         return ["[Transformers library not available]"]
     
     try:
-        import signal
-        
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Model loading timed out")
-        
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(5)
-        
+        # Note: This may require authentication for gated models
+        # Fallback to using AutoTokenizer if LlamaTokenizer is not available
         try:
-            # Note: This may require authentication for gated models
-            # Fallback to using AutoTokenizer if LlamaTokenizer is not available
-            try:
-                tokenizer = LlamaTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf')
-            except:
-                # Try with AutoTokenizer as alternative
-                tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf')
-            
-            signal.alarm(0)
-            
-            # Get token strings and token IDs
-            encoded = tokenizer(text, add_special_tokens=False)
-            tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-            token_ids = encoded['input_ids']
-            
-            # Return tokens with IDs for display
-            result_tokens = []
-            for token, token_id in zip(tokens, token_ids):
-                result_tokens.append(f"{token} [{token_id}]")
-            
-            return result_tokens if result_tokens else ["[Empty tokenization]"]
-        except TimeoutError:
-            signal.alarm(0)
-            return ["[LLaMA 2 model loading timed out - offline mode]"]
-    except Exception as e:
-        return [f"[LLaMA 2 tokenization failed: Model not available offline]"]
+            tokenizer = LlamaTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf', 
+                                                      local_files_only=True)
+        except (OSError, ValueError):
+            # Try with AutoTokenizer as alternative
+            tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf',
+                                                     local_files_only=True)
+        
+        # Get token strings and token IDs
+        encoded = tokenizer(text, add_special_tokens=False)
+        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
+        token_ids = encoded['input_ids']
+        
+        # Return tokens with IDs for display
+        result_tokens = []
+        for token, token_id in zip(tokens, token_ids):
+            result_tokens.append(f"{token} [{token_id}]")
+        
+        return result_tokens if result_tokens else ["[Empty tokenization]"]
+    except (OSError, ValueError, ImportError, RuntimeError) as e:
+        return ["[LLaMA 2 tokenization failed: Model not available offline]"]
 
 
 def create_colored_tokens(tokens):
