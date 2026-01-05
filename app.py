@@ -233,8 +233,10 @@ def tokenize_phi3(text):
     
     try:
         # Try microsoft/phi-2 as fallback (phi-3 models may require special access)
-        # Note: trust_remote_code is required for this model but poses security risks
-        # In production, use only verified and cached models
+        # Note: This model typically requires trust_remote_code=True, but we disable it
+        # for security reasons. This may cause the tokenizer to fail, which is acceptable
+        # in favor of not executing arbitrary remote code. In production, use pre-validated
+        # and cached models only.
         tokenizer = AutoTokenizer.from_pretrained('microsoft/phi-2', 
                                                    local_files_only=True,
                                                    trust_remote_code=False)
@@ -259,15 +261,19 @@ def tokenize_llama2(text):
         return ["[Transformers library not available]"]
     
     try:
-        # Note: This may require authentication for gated models
-        # Fallback to using AutoTokenizer if LlamaTokenizer is not available
-        try:
-            tokenizer = LlamaTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf', 
-                                                      local_files_only=True)
-        except (OSError, ValueError):
-            # Try with AutoTokenizer as alternative
-            tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf',
-                                                     local_files_only=True)
+        # Note: LLaMA models may require authentication for gated model access
+        # Try LlamaTokenizer first, then AutoTokenizer as fallback
+        tokenizer = None
+        for tokenizer_class in [LlamaTokenizer, AutoTokenizer]:
+            try:
+                tokenizer = tokenizer_class.from_pretrained('meta-llama/Llama-2-7b-hf',
+                                                           local_files_only=True)
+                break
+            except (OSError, ValueError):
+                continue
+        
+        if tokenizer is None:
+            return ["[LLaMA 2 tokenization failed: Model not available offline]"]
         
         # Get token strings and token IDs
         encoded = tokenizer(text, add_special_tokens=False)
