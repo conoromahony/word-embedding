@@ -5,10 +5,7 @@ Supports multiple tokenization approaches: GPT-2/3 (tiktoken), T5 (sentencepiece
 
 import random
 import tiktoken
-import sentencepiece as spm
 from flask import Flask, render_template, request, jsonify
-import os
-import tempfile
 
 app = Flask(__name__)
 
@@ -30,7 +27,7 @@ def tokenize_gpt2(text):
         tokens = encoding.encode(text)
         token_strings = [encoding.decode([token]) for token in tokens]
         return token_strings
-    except Exception as e:
+    except (ImportError, ConnectionError, RuntimeError, OSError) as e:
         # Fallback to BPE-like tokenization if tiktoken fails
         # This mimics BPE behavior with character-level fallback
         tokens = []
@@ -66,39 +63,36 @@ def tokenize_t5(text):
     Tokenize text using T5 tokenizer via sentencepiece.
     Uses a pre-trained T5 model vocabulary if available.
     """
-    try:
-        # For T5, we need a sentencepiece model file
-        # Since we may not have one readily available, we'll create a simple tokenizer
-        # that mimics T5's behavior (subword tokenization)
-        
-        # Fallback: Simple whitespace + punctuation splitting
-        # In production, you would load a proper T5 sentencepiece model
-        tokens = []
-        current_token = ""
-        
-        for char in text:
-            if char.isspace():
-                if current_token:
-                    tokens.append(current_token)
-                    current_token = ""
-                tokens.append(char)
-            elif char in ".,!?;:":
-                if current_token:
-                    tokens.append(current_token)
-                    current_token = ""
-                tokens.append(char)
-            else:
-                current_token += char
-        
-        if current_token:
-            tokens.append(current_token)
-        
-        # Add T5 prefix indicators
-        tokens = ["▁" + token if not token.isspace() else token for token in tokens]
-        
-        return tokens
-    except Exception as e:
-        return [f"Error: {str(e)}"]
+    # For T5, we need a sentencepiece model file
+    # Since we may not have one readily available, we'll create a simple tokenizer
+    # that mimics T5's behavior (subword tokenization)
+    
+    # Fallback: Simple whitespace + punctuation splitting
+    # In production, you would load a proper T5 sentencepiece model
+    tokens = []
+    current_token = ""
+    
+    for char in text:
+        if char.isspace():
+            if current_token:
+                tokens.append(current_token)
+                current_token = ""
+            tokens.append(char)
+        elif char in ".,!?;:":
+            if current_token:
+                tokens.append(current_token)
+                current_token = ""
+            tokens.append(char)
+        else:
+            current_token += char
+    
+    if current_token:
+        tokens.append(current_token)
+    
+    # Add T5 prefix indicators
+    tokens = ["▁" + token if not token.isspace() else token for token in tokens]
+    
+    return tokens
 
 
 def tokenize_whisper(text):
@@ -106,32 +100,29 @@ def tokenize_whisper(text):
     Placeholder tokenizer for Whisper/CLIP.
     Implements a simple word-based tokenization as an example.
     """
-    try:
-        # Simple word tokenization with punctuation handling
-        tokens = []
-        current_token = ""
-        
-        for char in text:
-            if char.isspace():
-                if current_token:
-                    tokens.append(current_token)
-                    current_token = ""
-                if char != ' ':  # Preserve non-space whitespace
-                    tokens.append(char)
-            elif char in ".,!?;:\"'()[]{}":
-                if current_token:
-                    tokens.append(current_token)
-                    current_token = ""
+    # Simple word tokenization with punctuation handling
+    tokens = []
+    current_token = ""
+    
+    for char in text:
+        if char.isspace():
+            if current_token:
+                tokens.append(current_token)
+                current_token = ""
+            if char != ' ':  # Preserve non-space whitespace
                 tokens.append(char)
-            else:
-                current_token += char
-        
-        if current_token:
-            tokens.append(current_token)
-        
-        return tokens
-    except Exception as e:
-        return [f"Error: {str(e)}"]
+        elif char in ".,!?;:\"'()[]{}":
+            if current_token:
+                tokens.append(current_token)
+                current_token = ""
+            tokens.append(char)
+        else:
+            current_token += char
+    
+    if current_token:
+        tokens.append(current_token)
+    
+    return tokens
 
 
 def create_colored_tokens(tokens):

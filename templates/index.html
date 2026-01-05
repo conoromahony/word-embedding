@@ -242,14 +242,14 @@
 
         <div class="examples">
             <h3>📝 Try these examples:</h3>
-            <span class="example-btn" onclick="setExample('Hello, world! How are you doing today?')">Simple Greeting</span>
-            <span class="example-btn" onclick="setExample('The quick brown fox jumps over the lazy dog.')">Classic Pangram</span>
-            <span class="example-btn" onclick="setExample('OpenAI\'s GPT-4 is a state-of-the-art language model.')">Technical Text</span>
-            <span class="example-btn" onclick="setExample('🎉 Emojis and special chars: @#$%^&*()')">Emojis & Special Chars</span>
+            <span class="example-btn" data-example="Hello, world! How are you doing today?">Simple Greeting</span>
+            <span class="example-btn" data-example="The quick brown fox jumps over the lazy dog.">Classic Pangram</span>
+            <span class="example-btn" data-example="OpenAI's GPT-4 is a state-of-the-art language model.">Technical Text</span>
+            <span class="example-btn" data-example="🎉 Emojis and special chars: @#$%^&*()">Emojis & Special Chars</span>
         </div>
 
         <div class="button-container">
-            <button onclick="tokenizeText()" id="tokenizeBtn">Tokenize Text</button>
+            <button id="tokenizeBtn">Tokenize Text</button>
         </div>
 
         <div class="error" id="error"></div>
@@ -258,9 +258,28 @@
     </div>
 
     <script>
-        function setExample(text) {
-            document.getElementById('inputText').value = text;
-        }
+        // Add event listeners for example buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Example button click handlers
+            const exampleButtons = document.querySelectorAll('.example-btn');
+            exampleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const exampleText = this.getAttribute('data-example');
+                    document.getElementById('inputText').value = exampleText;
+                });
+            });
+
+            // Tokenize button click handler
+            document.getElementById('tokenizeBtn').addEventListener('click', tokenizeText);
+
+            // Allow Enter key to trigger tokenization (with Shift+Enter for new line)
+            document.getElementById('inputText').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    tokenizeText();
+                }
+            });
+        });
 
         async function tokenizeText() {
             const text = document.getElementById('inputText').value.trim();
@@ -351,14 +370,6 @@
                 resultsDiv.appendChild(tokenizerDiv);
             }
         }
-
-        // Allow Enter key to trigger tokenization (with Shift+Enter for new line)
-        document.getElementById('inputText').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                tokenizeText();
-            }
-        });
     </script>
 </body>
 </html>
