@@ -1,6 +1,7 @@
 """
 Flask application for visualizing LLM tokenization.
-Supports multiple tokenization approaches: GPT-2/3 (tiktoken), T5 (sentencepiece), and custom tokenizers.
+Supports multiple tokenization approaches: GPT-2/3 (tiktoken with BPE fallback), 
+T5 (custom SentencePiece-style implementation), and custom tokenizers.
 """
 
 import random

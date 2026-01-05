@@ -89,8 +89,8 @@ word-embedding/
 
 - **Flask** (3.0.0): Web framework
 - **tiktoken** (0.5.2): OpenAI's tokenizer for GPT models
-- **sentencepiece** (0.1.99): Google's tokenization library
-- **Werkzeug** (3.0.1): WSGI utilities for Flask
+- **sentencepiece** (0.1.99): Google's tokenization library (optional, not currently used)
+- **Werkzeug** (3.0.3): WSGI utilities for Flask (security-patched version)
 
 ## How It Works
 
@@ -128,12 +128,23 @@ Each token is assigned a random pastel color from the RGB spectrum to make indiv
 
 ## Development
 
-### Running in Debug Mode
+### Running in Debug Mode (Development Only)
 
-The application runs in debug mode by default, which enables:
+By default, the application runs in production mode for security. To enable debug mode for development:
+
+```bash
+export FLASK_DEBUG=true
+python app.py
+```
+
+Debug mode enables:
 - Auto-reload on code changes
 - Detailed error messages
 - Interactive debugger
+
+**Important:** Never enable debug mode in production environments!
+
+### Production Deployment
 
 For production deployment, use a production WSGI server like Gunicorn:
 ```bash
