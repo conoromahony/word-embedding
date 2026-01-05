@@ -167,17 +167,17 @@ def tokenize():
     # Create colored token representations
     results = {
         'gpt2': {
-            'name': 'GPT-2/GPT-3 (BPE via tiktoken)',
+            'name': 'GPT-2/GPT-3 (BPE via tiktoken from OpenAI)',
             'tokens': create_colored_tokens(gpt2_tokens),
             'count': len(gpt2_tokens)
         },
         't5': {
-            'name': 'T5/UL2 (SentencePiece)',
+            'name': 'T5/UL2 (SentencePiece from Google)',
             'tokens': create_colored_tokens(t5_tokens),
             'count': len(t5_tokens)
         },
         'whisper': {
-            'name': 'Whisper/CLIP (Custom)',
+            'name': 'Whisper/CLIP (Custom from OpenAI)',
             'tokens': create_colored_tokens(whisper_tokens),
             'count': len(whisper_tokens)
         }
