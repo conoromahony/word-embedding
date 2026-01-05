@@ -113,34 +113,7 @@ def tokenize_t5(text):
     return tokens
 
 
-def tokenize_whisper(text):
-    """
-    Placeholder tokenizer for Whisper/CLIP.
-    Implements a simple word-based tokenization as an example.
-    """
-    # Simple word tokenization with punctuation handling
-    tokens = []
-    current_token = ""
-    
-    for char in text:
-        if char.isspace():
-            if current_token:
-                tokens.append(current_token)
-                current_token = ""
-            if char != ' ':  # Preserve non-space whitespace
-                tokens.append(char)
-        elif char in ".,!?;:\"'()[]{}":
-            if current_token:
-                tokens.append(current_token)
-                current_token = ""
-            tokens.append(char)
-        else:
-            current_token += char
-    
-    if current_token:
-        tokens.append(current_token)
-    
-    return tokens
+
 
 
 def tokenize_bert(text):
@@ -150,16 +123,10 @@ def tokenize_bert(text):
     
     try:
         tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', local_files_only=True)
-        # Get token strings and token IDs
+        # Get token strings only (no IDs)
         tokens = tokenizer.tokenize(text)
-        token_ids = tokenizer.convert_tokens_to_ids(tokens)
         
-        # Return tokens with IDs for display
-        result_tokens = []
-        for token, token_id in zip(tokens, token_ids):
-            result_tokens.append(f"{token} [{token_id}]")
-        
-        return result_tokens if result_tokens else ["[Empty tokenization]"]
+        return tokens if tokens else ["[Empty tokenization]"]
     except (OSError, ValueError, ImportError, RuntimeError) as e:
         return ["[BERT tokenization failed: Model not available offline]"]
 
@@ -172,58 +139,15 @@ def tokenize_gpt4(text):
         tokens = encoding.encode(text)
         token_strings = [encoding.decode([token]) for token in tokens]
         
-        # Return tokens with IDs for display
-        result_tokens = []
-        for token_str, token_id in zip(token_strings, tokens):
-            result_tokens.append(f"{token_str} [{token_id}]")
-        
-        return result_tokens if result_tokens else ["[Empty tokenization]"]
+        return token_strings if token_strings else ["[Empty tokenization]"]
     except (OSError, ValueError, ImportError, RuntimeError, ConnectionError) as e:
         return ["[GPT-4 tokenization failed: Encoding not available offline]"]
 
 
-def tokenize_starcoder(text):
-    """Tokenize text using StarCoder tokenizer from bigcode/starcoder."""
-    if not TRANSFORMERS_AVAILABLE:
-        return ["[Transformers library not available]"]
-    
-    try:
-        tokenizer = AutoTokenizer.from_pretrained('bigcode/starcoder', local_files_only=True)
-        # Get token strings and token IDs
-        encoded = tokenizer(text, add_special_tokens=False)
-        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-        token_ids = encoded['input_ids']
-        
-        # Return tokens with IDs for display
-        result_tokens = []
-        for token, token_id in zip(tokens, token_ids):
-            result_tokens.append(f"{token} [{token_id}]")
-        
-        return result_tokens if result_tokens else ["[Empty tokenization]"]
-    except (OSError, ValueError, ImportError, RuntimeError) as e:
-        return ["[StarCoder tokenization failed: Model not available offline]"]
 
 
-def tokenize_galactica(text):
-    """Tokenize text using Galactica tokenizer from facebook/galactica-1.3b."""
-    if not TRANSFORMERS_AVAILABLE:
-        return ["[Transformers library not available]"]
-    
-    try:
-        tokenizer = AutoTokenizer.from_pretrained('facebook/galactica-1.3b', local_files_only=True)
-        # Get token strings and token IDs
-        encoded = tokenizer(text, add_special_tokens=False)
-        tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-        token_ids = encoded['input_ids']
-        
-        # Return tokens with IDs for display
-        result_tokens = []
-        for token, token_id in zip(tokens, token_ids):
-            result_tokens.append(f"{token} [{token_id}]")
-        
-        return result_tokens if result_tokens else ["[Empty tokenization]"]
-    except (OSError, ValueError, ImportError, RuntimeError) as e:
-        return ["[Galactica tokenization failed: Model not available offline]"]
+
+
 
 
 def tokenize_phi3(text):
@@ -240,17 +164,11 @@ def tokenize_phi3(text):
         tokenizer = AutoTokenizer.from_pretrained('microsoft/phi-2', 
                                                    local_files_only=True,
                                                    trust_remote_code=False)
-        # Get token strings and token IDs
+        # Get token strings only (no IDs)
         encoded = tokenizer(text, add_special_tokens=False)
         tokens = tokenizer.convert_ids_to_tokens(encoded['input_ids'])
-        token_ids = encoded['input_ids']
         
-        # Return tokens with IDs for display
-        result_tokens = []
-        for token, token_id in zip(tokens, token_ids):
-            result_tokens.append(f"{token} [{token_id}]")
-        
-        return result_tokens if result_tokens else ["[Empty tokenization]"]
+        return tokens if tokens else ["[Empty tokenization]"]
     except (OSError, ValueError, ImportError, RuntimeError) as e:
         return ["[Phi-3 tokenization failed: Model not available offline]"]
 
@@ -325,63 +243,43 @@ def tokenize():
     
     # Tokenize with different approaches
     gpt2_tokens = tokenize_gpt2(text)
-    t5_tokens = tokenize_t5(text)
-    whisper_tokens = tokenize_whisper(text)
-    
-    # Tokenize with new models
-    bert_tokens = tokenize_bert(text)
     gpt4_tokens = tokenize_gpt4(text)
-    starcoder_tokens = tokenize_starcoder(text)
-    galactica_tokens = tokenize_galactica(text)
-    phi3_tokens = tokenize_phi3(text)
+    bert_tokens = tokenize_bert(text)
+    t5_tokens = tokenize_t5(text)
     llama2_tokens = tokenize_llama2(text)
+    phi3_tokens = tokenize_phi3(text)
     
-    # Create colored token representations
+    # Create colored token representations in the specified order
     results = {
         'gpt2': {
-            'name': 'GPT-2/GPT-3 (BPE via tiktoken from OpenAI)',
+            'name': 'GPT-2/GPT-3 - BPE tokenizer with 50,257 vocabulary tokens.',
             'tokens': create_colored_tokens(gpt2_tokens),
             'count': len(gpt2_tokens)
         },
-        't5': {
-            'name': 'T5/UL2 (SentencePiece from Google)',
-            'tokens': create_colored_tokens(t5_tokens),
-            'count': len(t5_tokens)
-        },
-        'whisper': {
-            'name': 'Whisper/CLIP (Custom from OpenAI)',
-            'tokens': create_colored_tokens(whisper_tokens),
-            'count': len(whisper_tokens)
-        },
-        'bert': {
-            'name': 'BERT (WordPiece from Google)',
-            'tokens': create_colored_tokens(bert_tokens),
-            'count': len(bert_tokens)
-        },
         'gpt4': {
-            'name': 'GPT-4 (tiktoken cl100k_base from OpenAI)',
+            'name': 'GPT-4 - Enhanced BPE tokenizer with 100,000 vocabulary tokens.',
             'tokens': create_colored_tokens(gpt4_tokens),
             'count': len(gpt4_tokens)
         },
-        'starcoder': {
-            'name': 'StarCoder (BPE from BigCode)',
-            'tokens': create_colored_tokens(starcoder_tokens),
-            'count': len(starcoder_tokens)
+        'bert': {
+            'name': 'BERT - WordPiece tokenizer with 30,522 vocabulary tokens.',
+            'tokens': create_colored_tokens(bert_tokens),
+            'count': len(bert_tokens)
         },
-        'galactica': {
-            'name': 'Galactica (BPE from Meta)',
-            'tokens': create_colored_tokens(galactica_tokens),
-            'count': len(galactica_tokens)
-        },
-        'phi3': {
-            'name': 'Phi-3 (CodeGen from Microsoft)',
-            'tokens': create_colored_tokens(phi3_tokens),
-            'count': len(phi3_tokens)
+        't5': {
+            'name': 'T5/UL2 - SentencePiece tokenizer with 32,128 vocabulary tokens.',
+            'tokens': create_colored_tokens(t5_tokens),
+            'count': len(t5_tokens)
         },
         'llama2': {
-            'name': 'LLaMA 2 (SentencePiece from Meta)',
+            'name': 'LLaMA 2 - SentencePiece tokenizer with 32,000 vocabulary tokens.',
             'tokens': create_colored_tokens(llama2_tokens),
             'count': len(llama2_tokens)
+        },
+        'phi3': {
+            'name': 'Phi-3 - CodeGen tokenizer with 51,200 vocabulary tokens.',
+            'tokens': create_colored_tokens(phi3_tokens),
+            'count': len(phi3_tokens)
         }
     }
     

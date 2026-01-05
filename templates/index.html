@@ -232,7 +232,7 @@
 
         <div class="info-box">
             <p><strong>How it works:</strong> Enter text and see how different tokenization approaches break it into tokens. Each token is color-coded for easy visualization.</p>
-            <p><strong>Supported tokenizers:</strong> GPT-2/3, T5/UL2, Whisper/CLIP, BERT, GPT-4, StarCoder, Galactica, Phi-3, LLaMA 2</p>
+            <p><strong>Supported tokenizers:</strong> GPT-2/3, GPT-4, BERT, T5/UL2, LLaMA 2, Phi-3</p>
         </div>
 
         <div class="input-section">
@@ -333,41 +333,47 @@
         function displayResults(data) {
             const resultsDiv = document.getElementById('results');
             
-            // Display each tokenizer's results
-            for (const [key, result] of Object.entries(data)) {
-                const tokenizerDiv = document.createElement('div');
-                tokenizerDiv.className = 'tokenizer-result';
+            // Define the order we want to display tokenizers
+            const tokenizerOrder = ['gpt2', 'gpt4', 'bert', 't5', 'llama2', 'phi3'];
+            
+            // Display each tokenizer's results in the specified order
+            tokenizerOrder.forEach(key => {
+                if (data[key]) {
+                    const result = data[key];
+                    const tokenizerDiv = document.createElement('div');
+                    tokenizerDiv.className = 'tokenizer-result';
 
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'tokenizer-header';
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'tokenizer-header';
 
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'tokenizer-name';
-                nameSpan.textContent = result.name;
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'tokenizer-name';
+                    nameSpan.textContent = result.name;
 
-                const countSpan = document.createElement('span');
-                countSpan.className = 'token-count';
-                countSpan.textContent = `${result.count} tokens`;
+                    const countSpan = document.createElement('span');
+                    countSpan.className = 'token-count';
+                    countSpan.textContent = `${result.count} tokens`;
 
-                headerDiv.appendChild(nameSpan);
-                headerDiv.appendChild(countSpan);
+                    headerDiv.appendChild(nameSpan);
+                    headerDiv.appendChild(countSpan);
 
-                const tokensContainer = document.createElement('div');
-                tokensContainer.className = 'tokens-container';
+                    const tokensContainer = document.createElement('div');
+                    tokensContainer.className = 'tokens-container';
 
-                result.tokens.forEach(token => {
-                    const tokenSpan = document.createElement('span');
-                    tokenSpan.className = 'token';
-                    tokenSpan.style.backgroundColor = token.color;
-                    tokenSpan.textContent = token.text;
-                    tokenSpan.title = `Token: "${token.text}"`;
-                    tokensContainer.appendChild(tokenSpan);
-                });
+                    result.tokens.forEach(token => {
+                        const tokenSpan = document.createElement('span');
+                        tokenSpan.className = 'token';
+                        tokenSpan.style.backgroundColor = token.color;
+                        tokenSpan.textContent = token.text;
+                        tokenSpan.title = `Token: "${token.text}"`;
+                        tokensContainer.appendChild(tokenSpan);
+                    });
 
-                tokenizerDiv.appendChild(headerDiv);
-                tokenizerDiv.appendChild(tokensContainer);
-                resultsDiv.appendChild(tokenizerDiv);
-            }
+                    tokenizerDiv.appendChild(headerDiv);
+                    tokenizerDiv.appendChild(tokensContainer);
+                    resultsDiv.appendChild(tokenizerDiv);
+                }
+            });
         }
     </script>
 </body>
