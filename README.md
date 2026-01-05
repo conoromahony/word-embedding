@@ -1,5 +1,3 @@
-# 🔤 LLM Tokenization Visualizer
-
 A Flask web application that provides an interactive interface for visualizing how different Large Language Models (LLMs) tokenize text. Compare tokenization approaches used by GPT-2/3, T5/UL2, and other models side-by-side with color-coded visual feedback.
 
 <img width="1232" height="1064" alt="Screenshot 2026-01-05 at 3 44 33 PM" src="https://github.com/user-attachments/assets/a90122b8-11da-446c-bbb6-5734626a0f50" />
